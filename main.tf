@@ -91,6 +91,9 @@ module "gke_cluster" {
   location = var.location
   network  = module.vpc_network.network
 
+  # Enable Istio service mesh
+  enable_istio = true
+
   # Deploy the cluster in the 'private' subnetwork, outbound internet access will be provided by NAT
   # See the network access tier table for full details:
   # https://github.com/gruntwork-io/terraform-google-network/tree/master/modules/vpc-network#access-tier

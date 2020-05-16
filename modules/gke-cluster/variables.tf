@@ -209,3 +209,15 @@ variable "services_secondary_range_name" {
   type        = string
   default     = null
 }
+
+variable "enable_istio" {
+  description = "The status of the Istio addon, which makes it easy to set up Istio for services in a cluster. It is disabled by default."
+  type        = bool
+  default     = false
+}
+
+variable "istio_auth" {
+  description = "(Optional) The authentication type between services in Istio. Available options include AUTH_MUTUAL_TLS"
+  type        = string
+  default     = null
+}
