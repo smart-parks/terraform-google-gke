@@ -131,12 +131,12 @@ module "gke_cluster" {
 resource "google_container_node_pool" "node_pool" {
   provider = google-beta
 
-  name     = "main-pool"
+  name     = "preemptible-pool"
   project  = var.project
   location = var.location
   cluster  = module.gke_cluster.name
 
-  initial_node_count = "1"
+  initial_node_count = "3"
 
   autoscaling {
     min_node_count = "1"
@@ -153,19 +153,19 @@ resource "google_container_node_pool" "node_pool" {
     machine_type = "n1-standard-1"
 
     labels = {
-      all-pools-example = "true"
+      preemptible = "true"
     }
 
     # Add a private tag to the instances. See the network access tier table for full details:
     # https://github.com/gruntwork-io/terraform-google-network/tree/master/modules/vpc-network#access-tier
     tags = [
       module.vpc_network.private,
-      "helm-example",
+      "terraform-helm",
     ]
 
     disk_size_gb = "30"
-    disk_type    = "pd-standard"
-    preemptible  = false
+    disk_type    = "pd-ssd"
+    preemptible  = true # TODO: Experiment w/ this
 
     service_account = module.gke_service_account.email
 
