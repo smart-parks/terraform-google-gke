@@ -54,7 +54,7 @@ data "google_client_config" "client" {}
 data "google_client_openid_userinfo" "terraform_user" {}
 
 provider "kubernetes" {
-  version = "~> 1.7.0"
+  version = "~> 1.11.2"
 
   load_config_file       = false
   host                   = data.template_file.gke_host_endpoint.rendered
@@ -63,8 +63,7 @@ provider "kubernetes" {
 }
 
 provider "helm" {
-  # Use provider with Helm 3.x support
-  version = "~> 1.1.1"
+  version = "~> 1.2.1"
 
   kubernetes {
     host                   = data.template_file.gke_host_endpoint.rendered
