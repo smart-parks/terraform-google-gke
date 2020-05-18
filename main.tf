@@ -57,7 +57,7 @@ provider "kubernetes" {
   version = "~> 1.11.2"
 
   load_config_file       = false
-  host                   = module.gke_cluster.endpoint
+  host                   = data.template_file.gke_host_endpoint.rendered
   token                  = data.template_file.access_token.rendered
   cluster_ca_certificate = data.template_file.cluster_ca_certificate.rendered
 }
@@ -66,7 +66,7 @@ provider "helm" {
   version = "~> 1.2.1"
 
   kubernetes {
-    host                   = module.gke_cluster.endpoint
+    host                   = data.template_file.gke_host_endpoint.rendered
     token                  = data.template_file.access_token.rendered
     cluster_ca_certificate = data.template_file.cluster_ca_certificate.rendered
     load_config_file       = false
@@ -117,6 +117,10 @@ module "gke_cluster" {
   master_authorized_networks_config = [
     {
       cidr_blocks = [
+        {
+          cidr_block   = "0.0.0.0/0"
+          display_name = "temp-public"
+        },
         {
           cidr_block   = data.google_compute_subnetwork.subnet.ip_cidr_range
           display_name = "vpc-private-subnet"
