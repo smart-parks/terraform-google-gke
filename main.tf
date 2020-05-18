@@ -89,7 +89,7 @@ module "gke_cluster" {
 
   project  = var.project
   location = var.location
-  network  = module.vpc_network.network
+  network  = var.network
 
   # Enable Istio service mesh
   enable_istio = true
@@ -97,7 +97,7 @@ module "gke_cluster" {
   # Deploy the cluster in the 'private' subnetwork, outbound internet access will be provided by NAT
   # See the network access tier table for full details:
   # https://github.com/gruntwork-io/terraform-google-network/tree/master/modules/vpc-network#access-tier
-  subnetwork = module.vpc_network.private_subnetwork
+  subnetwork = var.subnet
 
   # When creating a private cluster, the 'master_ipv4_cidr_block' has to be defined and the size must be /28
   master_ipv4_cidr_block = var.master_ipv4_cidr_block
@@ -106,7 +106,7 @@ module "gke_cluster" {
   enable_private_nodes = "true"
 
   # To make testing easier, we keep the public endpoint available. In production, we highly recommend restricting access to only within the network boundary, requiring your users to use a bastion host or VPN.
-  disable_public_endpoint = "false"
+  disable_public_endpoint = "true"
 
   # With a private cluster, it is highly recommended to restrict access to the cluster master
   # However, for testing purposes we will allow all inbound traffic.
@@ -114,14 +114,14 @@ module "gke_cluster" {
     {
       cidr_blocks = [
         {
-          cidr_block   = "0.0.0.0/0"
-          display_name = "all-for-testing"
+          cidr_block   = var.subnet.ip_cidr_range
+          display_name = "vpc-private-subnet"
         },
       ]
     },
   ]
 
-  cluster_secondary_range_name = module.vpc_network.private_subnetwork_secondary_range_name
+  cluster_secondary_range_name = var.subnet_secondary_range_name
 }
 
 # ---------------------------------------------------------------------------------------------------------------------
@@ -198,27 +198,6 @@ module "gke_service_account" {
   name        = var.cluster_service_account_name
   project     = var.project
   description = var.cluster_service_account_description
-}
-
-# ---------------------------------------------------------------------------------------------------------------------
-# CREATE A NETWORK TO DEPLOY THE CLUSTER TO
-# ---------------------------------------------------------------------------------------------------------------------
-
-resource "random_string" "suffix" {
-  length  = 4
-  special = false
-  upper   = false
-}
-
-module "vpc_network" {
-  source = "github.com/gruntwork-io/terraform-google-network.git//modules/vpc-network?ref=v0.4.0"
-
-  name_prefix = "${var.cluster_name}-network-${random_string.suffix.result}"
-  project     = var.project
-  region      = var.region
-
-  cidr_block           = var.vpc_cidr_block
-  secondary_cidr_block = var.vpc_secondary_cidr_block
 }
 
 # ---------------------------------------------------------------------------------------------------------------------

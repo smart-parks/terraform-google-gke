@@ -18,6 +18,16 @@ variable "region" {
   type        = string
 }
 
+variable "network" {
+  description = "The network into which to deploy the cluster."
+  type        = string
+}
+
+variable "subnet" {
+  description = "The subnet into which to deploy the cluster."
+  type        = string
+}
+
 # ---------------------------------------------------------------------------------------------------------------------
 # OPTIONAL PARAMETERS
 # These parameters have reasonable defaults.
