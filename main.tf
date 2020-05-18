@@ -74,6 +74,15 @@ provider "helm" {
   }
 }
 
+data "google_compute_network" "network" {
+  name   = var.network
+}
+
+data "google_compute_subnetwork" "subnet" {
+  name   = var.subnet
+  region = var.region
+}
+
 # ---------------------------------------------------------------------------------------------------------------------
 # DEPLOY A PRIVATE CLUSTER IN GOOGLE CLOUD PLATFORM
 # ---------------------------------------------------------------------------------------------------------------------
@@ -104,16 +113,13 @@ module "gke_cluster" {
   # This setting will make the cluster private
   enable_private_nodes = "true"
 
-  # To make testing easier, we keep the public endpoint available. In production, we highly recommend restricting access to only within the network boundary, requiring your users to use a bastion host or VPN.
   disable_public_endpoint = "true"
 
-  # With a private cluster, it is highly recommended to restrict access to the cluster master
-  # However, for testing purposes we will allow all inbound traffic.
   master_authorized_networks_config = [
     {
       cidr_blocks = [
         {
-          cidr_block   = var.subnet.ip_cidr_range
+          cidr_block   = data.google_compute_subnetwork.subnet.ip_cidr_range
           display_name = "vpc-private-subnet"
         },
       ]
@@ -153,10 +159,7 @@ resource "google_container_node_pool" "node_pool" {
       preemptible = "true"
     }
 
-    # Add a private tag to the instances. See the network access tier table for full details:
-    # https://github.com/gruntwork-io/terraform-google-network/tree/master/modules/vpc-network#access-tier
     tags = [
-      module.vpc_network.private,
       "terraform-helm",
     ]
 
