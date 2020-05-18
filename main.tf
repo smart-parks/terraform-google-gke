@@ -136,7 +136,7 @@ resource "google_container_node_pool" "node_pool" {
   location = var.location
   cluster  = module.gke_cluster.name
 
-  initial_node_count = "3"
+  initial_node_count = "1"
 
   autoscaling {
     min_node_count = "1"
