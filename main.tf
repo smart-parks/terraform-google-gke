@@ -57,7 +57,7 @@ provider "kubernetes" {
   version = "~> 1.11.2"
 
   load_config_file       = false
-  host                   = data.template_file.gke_host_endpoint.rendered
+  host                   = module.gke_cluster.endpoint
   token                  = data.template_file.access_token.rendered
   cluster_ca_certificate = data.template_file.cluster_ca_certificate.rendered
 }
@@ -66,7 +66,7 @@ provider "helm" {
   version = "~> 1.2.1"
 
   kubernetes {
-    host                   = data.template_file.gke_host_endpoint.rendered
+    host                   = module.gke_cluster.endpoint
     token                  = data.template_file.access_token.rendered
     cluster_ca_certificate = data.template_file.cluster_ca_certificate.rendered
     load_config_file       = false
