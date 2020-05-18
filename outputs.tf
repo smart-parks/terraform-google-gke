@@ -20,3 +20,11 @@ output "cluster_ca_certificate" {
   sensitive   = true
   value       = module.gke_cluster.cluster_ca_certificate
 }
+
+output "network" {
+  value = module.vpc_network.network
+}
+
+output "subnet" {
+  value = module.vpc_network.private_subnetwork
+}

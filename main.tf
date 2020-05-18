@@ -15,7 +15,7 @@ terraform {
 # ---------------------------------------------------------------------------------------------------------------------
 
 provider "google" {
-  version = "~> 3.15"
+  version = "~> 3.15.0"
   project = var.project
   region  = var.region
 
@@ -32,7 +32,8 @@ provider "google" {
 }
 
 provider "google-beta" {
-  version = "~> 3.15"
+  version = "~> 3.15.0"
+  project = var.project
   region  = var.region
 
   scopes = [
@@ -63,6 +64,7 @@ provider "kubernetes" {
 }
 
 provider "helm" {
+  # Use provider with Helm 3.x support
   version = "~> 1.2.1"
 
   kubernetes {
@@ -71,15 +73,6 @@ provider "helm" {
     cluster_ca_certificate = data.template_file.cluster_ca_certificate.rendered
     load_config_file       = false
   }
-}
-
-data "google_compute_network" "network" {
-  name   = var.network
-}
-
-data "google_compute_subnetwork" "subnet" {
-  name   = var.subnet
-  region = var.region
 }
 
 # ---------------------------------------------------------------------------------------------------------------------
@@ -96,7 +89,7 @@ module "gke_cluster" {
 
   project  = var.project
   location = var.location
-  network  = var.network
+  network  = module.vpc_network.network
 
   # Enable Istio service mesh
   enable_istio = true
@@ -104,7 +97,7 @@ module "gke_cluster" {
   # Deploy the cluster in the 'private' subnetwork, outbound internet access will be provided by NAT
   # See the network access tier table for full details:
   # https://github.com/gruntwork-io/terraform-google-network/tree/master/modules/vpc-network#access-tier
-  subnetwork = var.subnet
+  subnetwork = module.vpc_network.private_subnetwork
 
   # When creating a private cluster, the 'master_ipv4_cidr_block' has to be defined and the size must be /28
   master_ipv4_cidr_block = var.master_ipv4_cidr_block
@@ -112,22 +105,23 @@ module "gke_cluster" {
   # This setting will make the cluster private
   enable_private_nodes = "true"
 
-  disable_public_endpoint = "true"
+  # To make testing easier, we keep the public endpoint available. In production, we highly recommend restricting access to only within the network boundary, requiring your users to use a bastion host or VPN.
+  disable_public_endpoint = "false"
 
+  # With a private cluster, it is highly recommended to restrict access to the cluster master
+  # However, for testing purposes we will allow all inbound traffic.
   master_authorized_networks_config = [
     {
       cidr_blocks = [
         {
           cidr_block   = "0.0.0.0/0"
-          display_name = "temp-public"
-        },
-        {
-          cidr_block   = data.google_compute_subnetwork.subnet.ip_cidr_range
-          display_name = "vpc-private-subnet"
+          display_name = "all-for-testing"
         },
       ]
     },
   ]
+
+  cluster_secondary_range_name = module.vpc_network.private_subnetwork_secondary_range_name
 }
 
 # ---------------------------------------------------------------------------------------------------------------------
@@ -162,7 +156,10 @@ resource "google_container_node_pool" "node_pool" {
       preemptible = "true"
     }
 
+    # Add a private tag to the instances. See the network access tier table for full details:
+    # https://github.com/gruntwork-io/terraform-google-network/tree/master/modules/vpc-network#access-tier
     tags = [
+      module.vpc_network.private,
       "terraform-helm",
     ]
 
@@ -201,6 +198,27 @@ module "gke_service_account" {
   name        = var.cluster_service_account_name
   project     = var.project
   description = var.cluster_service_account_description
+}
+
+# ---------------------------------------------------------------------------------------------------------------------
+# CREATE A NETWORK TO DEPLOY THE CLUSTER TO
+# ---------------------------------------------------------------------------------------------------------------------
+
+resource "random_string" "suffix" {
+  length  = 4
+  special = false
+  upper   = false
+}
+
+module "vpc_network" {
+  source = "github.com/gruntwork-io/terraform-google-network.git//modules/vpc-network?ref=v0.4.0"
+
+  name_prefix = "${var.cluster_name}-network-${random_string.suffix.result}"
+  project     = var.project
+  region      = var.region
+
+  cidr_block           = var.vpc_cidr_block
+  secondary_cidr_block = var.vpc_secondary_cidr_block
 }
 
 # ---------------------------------------------------------------------------------------------------------------------

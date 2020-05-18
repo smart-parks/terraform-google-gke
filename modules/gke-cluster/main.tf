@@ -60,6 +60,13 @@ resource "google_container_cluster" "cluster" {
     }
   }
 
+  # ip_allocation_policy.use_ip_aliases defaults to true, since we define the block `ip_allocation_policy`
+  ip_allocation_policy {
+    // Choose the range, but let GCP pick the IPs within the range
+    cluster_secondary_range_name  = var.cluster_secondary_range_name
+    services_secondary_range_name = var.services_secondary_range_name != null ? var.services_secondary_range_name : var.cluster_secondary_range_name
+  }
+
   # We can optionally control access to the cluster
   # See https://cloud.google.com/kubernetes-engine/docs/how-to/private-clusters
   private_cluster_config {
