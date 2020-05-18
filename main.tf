@@ -119,8 +119,6 @@ module "gke_cluster" {
       ]
     },
   ]
-
-  cluster_secondary_range_name = var.subnet_secondary_range_name
 }
 
 # ---------------------------------------------------------------------------------------------------------------------
